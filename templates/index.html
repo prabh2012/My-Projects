@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SignScript — Gesture to Text</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Clash+Display:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <!-- Fallback if Clash Display not available -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <div class="noise"></div>
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="8" fill="url(#brandGrad)"/>
+          <text x="5" y="21" font-size="18">🤟</text>
+          <defs>
+            <linearGradient id="brandGrad" x1="0" y1="0" x2="28" y2="28">
+              <stop offset="0%" stop-color="#1a1a2e"/>
+              <stop offset="100%" stop-color="#0f3460"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-name">SignScript</h1>
+        <p class="brand-sub">Gesture Recognition System</p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="stat-badge">
+        <span class="stat-val" id="fpsVal">0</span>
+        <span class="stat-label">FPS</span>
+      </div>
+      <div class="stat-badge">
+        <span class="stat-val" id="totalVal">0</span>
+        <span class="stat-label">DETECTED</span>
+      </div>
+      <div class="status-chip" id="statusChip">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusTxt">No Hand</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ── -->
+  <main>
+
+    <!-- LEFT: Camera + sign display -->
+    <div class="left-panel">
+
+      <!-- Camera -->
+      <div class="cam-card">
+        <div class="card-header">
+          <span class="card-title">LIVE FEED</span>
+          <div class="rec-badge"><span class="rec-dot"></span>REC</div>
+        </div>
+        <div class="cam-wrap">
+          <img id="camFeed" src="/video_feed" alt="Camera"/>
+          <div class="cam-corners">
+            <span class="c c-tl"></span><span class="c c-tr"></span>
+            <span class="c c-bl"></span><span class="c c-br"></span>
+          </div>
+          <div class="no-hand" id="noHand">
+            <div class="no-hand-inner">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <path d="M10 28V14a2 2 0 014 0v6m0-6V10a2 2 0 014 0v4m0-4V12a2 2 0 014 0v6M14 20v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M8 20c0 4.4 3.6 8 8 8s8-3.6 8-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <p>Show your hand</p>
+            </div>
+          </div>
+          <!-- Progress ring for hold timer -->
+          <div class="hold-ring" id="holdRing">
+            <svg viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r="24" stroke="rgba(255,255,255,0.1)" stroke-width="4" fill="none"/>
+              <circle cx="30" cy="30" r="24" stroke="#00e5a0" stroke-width="4" fill="none"
+                stroke-dasharray="150.8" stroke-dashoffset="150.8"
+                stroke-linecap="round" id="ringCircle" transform="rotate(-90 30 30)"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detected sign -->
+      <div class="sign-card" id="signCard">
+        <div class="sign-main">
+          <div class="sign-eyebrow">DETECTED GESTURE</div>
+          <div class="sign-word" id="signWord">—</div>
+        </div>
+        <div class="sign-right">
+          <div class="conf-ring">
+            <svg viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" stroke="rgba(255,255,255,0.06)" stroke-width="6" fill="none"/>
+              <circle cx="40" cy="40" r="32" stroke="url(#confGrad)" stroke-width="6" fill="none"
+                stroke-dasharray="201" stroke-dashoffset="201"
+                stroke-linecap="round" id="confCircle" transform="rotate(-90 40 40)"/>
+              <defs>
+                <linearGradient id="confGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#7b61ff"/>
+                  <stop offset="100%" stop-color="#00e5a0"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="conf-pct" id="confPct">0%</div>
+          </div>
+          <div class="conf-label">CONFIDENCE</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Output + gestures -->
+    <div class="right-panel">
+
+      <!-- Output box -->
+      <div class="output-card">
+        <div class="card-header">
+          <span class="card-title">TEXT OUTPUT</span>
+          <div class="word-count"><span id="wordCount">0</span> words</div>
+        </div>
+        <div class="output-body">
+          <div class="output-text" id="outputText">
+            <span class="placeholder">Your sentence will appear here as you sign...</span>
+          </div>
+        </div>
+        <div class="output-tags" id="outputTags"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-row">
+        <button class="ctrl-btn space-btn" onclick="addSpace()">
+          <svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="10" width="12" height="2" rx="1" fill="currentColor"/><path d="M5 6l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+          SPACE
+        </button>
+        <button class="ctrl-btn delete-btn" onclick="deleteLast()">
+          <svg width="16" height="16" viewBox="0 0 16 16"><path d="M6 3H13a1 1 0 011 1v8a1 1 0 01-1 1H6L2 8l4-5z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/><path d="M10 6l-3 4M7 6l3 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          DELETE
+        </button>
+        <button class="ctrl-btn clear-btn" onclick="clearSentence()">
+          <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 4h10M6 4V3h4v1M5 4l1 9h4l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+          CLEAR
+        </button>
+        <button class="ctrl-btn copy-btn" onclick="copyText()">
+          <svg width="16" height="16" viewBox="0 0 16 16"><rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M3 11V3a1 1 0 011-1h7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+          COPY
+        </button>
+      </div>
+
+      <!-- Gesture reference grid -->
+      <div class="gesture-card">
+        <div class="card-header">
+          <span class="card-title">GESTURE LIBRARY</span>
+          <span class="gesture-count">{{ classes|length }} gestures</span>
+        </div>
+        <div class="gesture-grid" id="gestureGrid">
+          {% for cls in classes %}
+          <div class="gesture-chip" id="chip-{{ cls | replace(' ', '_') }}">
+            {{ cls }}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- How to use -->
+      <div class="howto-card">
+        <div class="card-title" style="margin-bottom:12px">HOW TO USE</div>
+        <div class="howto-steps">
+          <div class="howto-step">
+            <div class="step-num">01</div>
+            <div class="step-info">
+              <div class="step-title">Run data_collection.py</div>
+              <div class="step-desc">Record 300 images for each gesture</div>
+            </div>
+          </div>
+          <div class="howto-step">
+            <div class="step-num">02</div>
+            <div class="step-info">
+              <div class="step-title">Run train_model.py</div>
+              <div class="step-desc">Train the ML classifier on your data</div>
+            </div>
+          </div>
+          <div class="howto-step">
+            <div class="step-num">03</div>
+            <div class="step-info">
+              <div class="step-title">Show a gesture</div>
+              <div class="step-desc">Hold for ~1.5 sec to auto-add word</div>
+            </div>
+          </div>
+          <div class="howto-step">
+            <div class="step-num">04</div>
+            <div class="step-info">
+              <div class="step-title">Build sentences</div>
+              <div class="step-desc">Use controls to edit your output</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <span>B.Tech CSE — 6th Semester Project</span>
+    <span class="footer-dot">·</span>
+    <span>Sign Language Recognition · MediaPipe + Random Forest</span>
+  </footer>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
